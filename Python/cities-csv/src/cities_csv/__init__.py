@@ -1,8 +1,11 @@
 from csv import DictReader
 from pathlib import Path
 
-from .schedules import City
-from .models import City as Model
+from sqlalchemy.orm import scoped_session, sessionmaker
+
+from .db import get_session
+from .parser import parse_city
+from .writer import write_cities
 
 
 def main() -> None:
@@ -11,6 +14,10 @@ def main() -> None:
     with open(csv_file) as f:
         dict_reader = DictReader(f)
 
-        for row in dict_reader:
-            validated_row = City(**row).model_dump()
-            model_row = Model(**validated_row)
+        cities = [parse_city(row) for row in dict_reader]
+
+    SessionFactory = sessionmaker()
+    ScopedSession = scoped_session(SessionFactory)
+
+    with Session() as session:
+        write_cities(session, cities)
