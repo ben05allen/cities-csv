@@ -1,0 +1,20 @@
+[project]
+name = "cities-csv"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "ben05allen", email = "ben05allen@hotmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic>=2.11.2",
+    "sqlalchemy>=2.0.40",
+]
+
+[project.scripts]
+cities-csv = "cities_csv:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
