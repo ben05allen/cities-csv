@@ -2,6 +2,7 @@ from csv import DictReader
 from pathlib import Path
 
 from .schedules import City
+from .models import City as Model
 
 
 def main() -> None:
@@ -11,4 +12,5 @@ def main() -> None:
         dict_reader = DictReader(f)
 
         for row in dict_reader:
-            print(City(**row).model_dump())
+            validated_row = City(**row).model_dump()
+            model_row = Model(**validated_row)
