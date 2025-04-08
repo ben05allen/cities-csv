@@ -13,7 +13,7 @@ async def create_table(db):
     await db.execute("""
             CREATE TABLE IF NOT EXISTS cities (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                city TEXT NOT NULL,
+                names TEXT NOT NULL,
                 state TEXT NOT NULL,
                 population INTEGER,
                 latitude REAL NOT NULL,
@@ -45,10 +45,10 @@ async def async_main() -> None:
             parsed_row = City(**row).model_dump()  # pyright: ignore
             await db.execute(
                 "INSERT INTO cities (city, state, population, latitude, longitude) VALUES (?, ?, ?, ?, ?)",
-                tuple(parsed_row.values()),
+                parsed_row.values(),
             )
 
-        await db.commit()
+    await db.commit()
 
 
 def main():
