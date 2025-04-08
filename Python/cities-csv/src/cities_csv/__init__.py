@@ -38,6 +38,9 @@ async def async_main() -> None:
     csv_file = Path(__file__).parents[4] / "data" / "cities.csv"
     db_file = Path(__file__).parents[4] / "data" / "cities.db"
 
+    if db_file.exists():
+        db_file.unlink()
+
     async with aiosqlite.connect(str(db_file.resolve())) as db:
         await create_table(db)
 
