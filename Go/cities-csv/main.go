@@ -1,51 +1,73 @@
-package main() 
+package main
 
 import (
-  "database/sql"
-  "encoding/csv"
-  "fmt"
-  "os"
+	"database/sql"
+	"encoding/csv"
+	"fmt"
+	"io"
+	"log"
+	"os"
 
-  _ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
-  file, err := os.Open("cities.csv")
-  if err != nil {
-    fmt.Println("Error opening csv file:", err)
-    return
-  }
-  defer file.Close()
+	file, err := os.Open("../../data/cities.csv")
+	if err != nil {
+		log.Fatal("Error opening csv file:", err)
+		return
+	}
+	defer file.Close()
 
-  reader := csv.NewReader(file)
-  records, err := reader.ReadAll()
-  if err != nil {
-    fmt.Println("Error reading csv file:", err)
-    return
-  }
+	reader := csv.NewReader(file)
+	headers, err := reader.Read()
+	if err != nil {
+		log.Fatal("Error reading CSV headers:", err)
+	}
+	fmt.Println("Headers: ", headers)
 
-  db, err := sql.Open("sqlite3", data.db)
-  if err != nil {
-    fmt.Println("Error opening database: ", err)
-    return
-  }
-  defer db.Close()
+	db, err := sql.Open("sqlite3", "../../data/cities.db")
+	if err != nil {
+		log.Fatal("Error opening database:", err)
+		return
+	}
+	defer db.Close()
 
-  _, err = db.Exec(`
+	_, err = db.Exec(`
   CREATE TABLE IF NOT EXISTS cities (
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    state NOT NULL,
-    population,
-    latitude NOT NULL,
-    longituge NOT NULL
+    state TEXT NOT NULL,
+    population INTEGER,
+    latitude REAL NOT NULL,
+    longituge REAL NOT NULL
   )
   `)
-  if err != nil {
-    fmt.Println("Error creating table:", err)
-    return
-  }
+	if err != nil {
+		log.Fatal("Error creating table:", err)
+		return
+	}
 
+	insertQuery := `INSERT INTO cities (name, state, population, latitude, longituge) VALUES (?, ?, ?, ?, ?)`
+	stmt, err := db.Prepare(insertQuery)
+	if err != nil {
+		log.Fatal("Error preparing insert statement:", err)
+	}
+	defer stmt.Close()
 
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatal("Error reading CSV row:", err)
+		}
+
+		_, err = stmt.Exec(record[0], record[1], record[2], record[3], record[4])
+		if err != nil {
+			log.Fatal("Error inserting record:", err)
+		}
+	}
+	fmt.Println("Successfully import CSV to SQLite")
 }
-
