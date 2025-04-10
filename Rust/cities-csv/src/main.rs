@@ -8,6 +8,7 @@ struct Record {
     name: String,
     latitude: f64,
     longitude: f64,
+    #[serde(deserialize_with = "csv::invalid_option")]
     population: Option<u64>,
     state: String,
 }
