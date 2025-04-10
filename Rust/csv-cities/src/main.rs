@@ -1,6 +1,16 @@
+use serde::Deserialize;
 use std::{env, error::Error, ffi::OsString, process};
 
-type Record = (String, String, Option<u64>, f64, f64);
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct Record {
+    #[serde(rename = "City")]
+    name: String,
+    latitude: f64,
+    longitude: f64,
+    population: Option<u64>,
+    state: String,
+}
 
 fn main() {
     if let Err(err) = run() {
