@@ -14,6 +14,13 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+type Config struct {
+	CSVPath string
+	DBPath  string
+}
+
+type Record []string
+
 type City struct {
 	Name       string  `validate:"required"`
 	State      string  `validate:"required"`
@@ -22,15 +29,42 @@ type City struct {
 	Longitude  float64 `validate:"longitude,required"`
 }
 
+func parseCity(r Record) (*City, error) {
+	var populationPtr *uint32
+	if r[2] != "" {
+		population_64, err := strconv.ParseUint(r[2], 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("Invalid population '%s': %v", r[2], err)
+		}
+		population_32 := uint32(population_64)
+		populationPtr = &population_32
+	}
+
+	latitude, err := strconv.ParseFloat(r[3], 64)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid latitude '%s': %v", r[3], err)
+	}
+
+	longitude, err := strconv.ParseFloat(r[4], 64)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid longitude '%s': %v", r[4], 64)
+	}
+
+	c := City{Name: r[0], State: r[1], Population: populationPtr, Latitude: latitude, Longitude: longitude}
+	return &c, nil
+}
+
 func main() {
-	file, err := os.Open("../../data/cities.csv")
+	config := Config{CSVPath: "../../data/cities.csv", DBPath: "../../data/cities.db"}
+
+	file, err := os.Open(config.CSVPath)
 	if err != nil {
 		log.Fatal("Error opening csv file:", err)
 		return
 	}
 	defer file.Close()
 
-	db, err := sql.Open("sqlite3", "../../data/cities.db")
+	db, err := sql.Open("sqlite3", config.DBPath)
 	if err != nil {
 		log.Fatal("Error opening database:", err)
 		return
@@ -76,33 +110,16 @@ func main() {
 				continue
 			}
 
-			var populationPtr *uint32
-			if record[2] != "" {
-				population_64, err := strconv.ParseUint(record[2], 10, 32)
-				if err != nil {
-					log.Printf("Invalid population '%s': %v", record[2], err)
-					continue
-				}
-				population_32 := uint32(population_64)
-				populationPtr = &population_32
-			}
-
-			latitude, err := strconv.ParseFloat(record[3], 64)
+			city, err := parseCity(record)
 			if err != nil {
-				log.Printf("Invalid latitude '%s': %v", record[3], err)
+				log.Printf("Error parsing CSV record: %v", err)
 			}
 
-			longitude, err := strconv.ParseFloat(record[4], 64)
-			if err != nil {
-				log.Printf("Invalid longitude '%s': %v", record[4], 64)
-			}
-
-			city := City{Name: record[0], State: record[1], Population: populationPtr, Latitude: latitude, Longitude: longitude}
 			if err := validate.Struct(city); err != nil {
 				log.Printf("Validation failed for record %v: %v", record, err)
 			}
 
-			citiesChan <- city
+			citiesChan <- *city
 		}
 		close(citiesChan)
 	}()
